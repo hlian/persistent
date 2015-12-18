@@ -139,10 +139,15 @@ keyAndEntityFields ent =
 
 type ExtraLine = [Text]
 
-newtype HaskellName = HaskellName { unHaskellName :: Text }
+newtype HaskellName = HaskellName { unHaskellName' :: Text }
     deriving (Show, Eq, Read, Ord)
 newtype DBName = DBName { unDBName :: Text }
     deriving (Show, Eq, Read, Ord)
+
+unHaskellName :: HaskellName -> Text
+unHaskellName = fixTypeUnderscore . unHaskellName'
+  where fixTypeUnderscore "type_" = "type"
+        fixTypeUnderscore s = s
 
 type Attr = Text
 
