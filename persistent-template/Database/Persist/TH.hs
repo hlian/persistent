@@ -1533,7 +1533,7 @@ mkJSON mps def = do
             (objectE `AppE` ListE pairs)
         pairs = zipWith toPair (entityFields def) xs
         toPair f x = InfixE
-            (Just (packE `AppE` LitE (StringL $ unpack $ unHaskellName $ fieldHaskell f)))
+            (Just (packE `AppE` LitE (StringL $ unpack $ unHaskellNameForJSON $ fieldHaskell f)))
             dotEqualE
             (Just $ VarE x)
         fromJSONI = typeInstanceD ''FromJSON (mpsGeneric mps) typ [parseJSON']
@@ -1550,7 +1550,7 @@ mkJSON mps def = do
         toPull f = InfixE
             (Just $ VarE obj)
             (if maybeNullable f then dotColonQE else dotColonE)
-            (Just $ AppE packE $ LitE $ StringL $ unpack $ unHaskellName $ fieldHaskell f)
+            (Just $ AppE packE $ LitE $ StringL $ unpack $ unHaskellNameForJSON $ fieldHaskell f)
     case mpsEntityJSON mps of
         Nothing -> return [toJSONI, fromJSONI]
         Just entityJSON -> do
@@ -1631,3 +1631,11 @@ isStrict = IsStrict
 --          in normalClause [ConP (mkName constr) [VarP x]]
 --                    (VarE 'toPersistValue `AppE` VarE x)
 
+
+-- | This special-cases "type_" and strips out its underscore. When
+-- used for JSON serialization and deserialization, it works around
+-- <https://github.com/yesodweb/persistent/issues/412>
+unHaskellNameForJSON :: HaskellName -> Text
+unHaskellNameForJSON = fixTypeUnderscore . unHaskellName
+  where fixTypeUnderscore "type_" = "type"
+        fixTypeUnderscore name = name
